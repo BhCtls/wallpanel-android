@@ -29,9 +29,19 @@
         <item>"Legacy"</item>
     </string-array>
 
-    <string name="app_name">WallPanel</string>
-    <string name="wallpanel_service_notification_title">WallPanel</string>
-    <string name="wallpanel_service_notification_message">WallPanel Running…</string>
+    <string-array name="infopanel_unit_names">
+        <item>Celsius</item>
+        <item>Fahrenheit</item>
+    </string-array>
+
+    <string-array name="infopanel_unit_values">
+        <item>celsius</item>
+        <item>fahrenheit</item>
+    </string-array>
+
+    <string name="app_name">InfoPanel</string>
+    <string name="wallpanel_service_notification_title">InfoPanel</string>
+    <string name="wallpanel_service_notification_message">InfoPanel Running…</string>
     <string name="title_settings">Settings</string>
     <string name="title_camera_settings">Camera Settings</string>
     <string name="title_mqtt_settings">MQTT Settings</string>
@@ -43,6 +53,24 @@
     <string name="title_setting_app_deviceid">Device ID</string>
     <string name="title_setting_app_preventsleep">Prevent Screen Sleep</string>
     <string name="title_setting_app_launchurl">Dashboard URL</string>
+    <string name="title_infopanel_mode">Built-in InfoPanel</string>
+    <string name="summary_infopanel_mode">Show the local clock, weather, and Android calendar dashboard. Turn off to use Dashboard URL.</string>
+    <string name="title_infopanel_latitude">Weather Latitude</string>
+    <string name="summary_infopanel_latitude">Latitude for Open-Meteo weather.</string>
+    <string name="title_infopanel_longitude">Weather Longitude</string>
+    <string name="summary_infopanel_longitude">Longitude for Open-Meteo weather.</string>
+    <string name="title_infopanel_units">Temperature Unit</string>
+    <string name="summary_infopanel_units">Unit shown on the built-in dashboard.</string>
+    <string name="title_infopanel_weather_endpoint">Custom Weather JSON Endpoint</string>
+    <string name="summary_infopanel_weather_endpoint">Optional HTTPS endpoint using temp, weather_code, description, updated_at fields.</string>
+    <string name="title_infopanel_allow_http">Allow Local HTTP Weather</string>
+    <string name="summary_infopanel_allow_http">Permit http:// weather endpoints for trusted LAN services only.</string>
+    <string name="title_infopanel_refresh_minutes">Weather Refresh Minutes</string>
+    <string name="summary_infopanel_refresh_minutes">How often weather data is refreshed. Default is 30.</string>
+    <string name="title_infopanel_calendar_days">Calendar Days</string>
+    <string name="summary_infopanel_calendar_days">Number of upcoming days to read from Android Calendar.</string>
+    <string name="title_infopanel_calendar_limit">Calendar Event Limit</string>
+    <string name="summary_infopanel_calendar_limit">Maximum upcoming calendar events to display.</string>
     <string name="title_setting_app_showactivity">Show Browser Activity</string>
     <string name="title_setting_camera_enabled">Camera Enabled</string>
     <string name="title_setting_camera_cameraid">Selected Camera</string>

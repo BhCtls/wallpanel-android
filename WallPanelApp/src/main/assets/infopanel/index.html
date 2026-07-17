@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>InfoPanel Nixie Clock</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main id="clock-screen" class="screen clock-screen">
+        <div id="nixie-clock" class="nixie-clock" aria-label="当前时间"></div>
+    </main>
+
+
+    <section id="weather-screen" class="screen weather-screen" hidden>
+        <div class="rain" aria-hidden="true"></div>
+        <div class="weather-card">
+            <div class="weather-city">杭州</div>
+            <div class="weather-condition">微雨</div>
+            <div class="weather-range"><strong>32</strong><span>—</span><strong>37</strong><i>°C</i></div>
+        </div>
+    </section>
+
+    
+    <section id="media-screen" class="screen media-screen" hidden>
+        <div class="media-preview">
+            <video id="camera-preview" autoplay muted playsinline></video>
+            <div id="media-status" class="media-status">正在准备摄像头和麦克风…</div>
+        </div>
+        <div class="media-readout">
+            <h1>WebCamera / WebMic</h1>
+            <div class="summary-card">
+                <h2>图像</h2>
+                <p id="image-presence">摄像头：检测中</p>
+                <p id="image-digest">摘要：——</p>
+                <p id="image-change">相对上一采样：——</p>
+            </div>
+            <div class="summary-card">
+                <h2>声音</h2>
+                <p id="audio-presence">麦克风：检测中</p>
+                <p id="audio-digest">摘要：——</p>
+                <p id="audio-change">相对上一采样：——</p>
+                <div class="level-track"><i id="audio-level"></i></div>
+            </div>
+            <p class="summary-note">webcamera没做呢</p>
+        </div>
+        <canvas id="sample-canvas" width="32" height="18" hidden></canvas>
+    </section>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -40,7 +40,10 @@ import com.thanksmister.iot.wallpanel.BuildConfig
 import com.thanksmister.iot.wallpanel.R
 import com.thanksmister.iot.wallpanel.network.ConnectionLiveData
 import com.thanksmister.iot.wallpanel.ui.fragments.CodeBottomSheetFragment
+import com.thanksmister.iot.wallpanel.ui.infopanel.InfoPanelBridge
+import com.thanksmister.iot.wallpanel.ui.infopanel.InfoPanelControlHub
 import kotlinx.android.synthetic.main.activity_browser.*
+import org.json.JSONObject
 import timber.log.Timber
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -62,6 +65,10 @@ class BrowserActivityNative : BaseBrowserActivity(), LifecycleObserver {
     private var isConnected = true
     private var webkitPermissionRequest: PermissionRequest? = null
     private var awaitingReconnect = false
+    private var infoPanelBridgeAttached = false
+    private var infoPanelTouchDownX = 0f
+    // Kept as Object because this legacy KAPT setup processes Kotlin stubs before new Java sources.
+    private lateinit var infoPanelControlHub: Any
 
     // To save current index
     private var playlistIndex = 0
@@ -158,18 +165,37 @@ class BrowserActivityNative : BaseBrowserActivity(), LifecycleObserver {
 
             @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
             override fun onPermissionRequest(request: PermissionRequest?) {
-                super.onPermissionRequest(request)
-                webkitPermissionRequest = request
-                request?.resources?.forEach {
-                    when(it){
-                        PermissionRequest.RESOURCE_AUDIO_CAPTURE -> {
-                            askForWebkitPermission(it, REQUEST_CODE_PERMISSION_AUDIO)
-                        }
-                        PermissionRequest.RESOURCE_VIDEO_CAPTURE -> {
-                            askForWebkitPermission(it, REQUEST_CODE_PERMISSION_CAMERA)
-                        }
-                    }
+                if (request == null || !isTrustedInfoPanelOrigin(request.origin)) {
+                    request?.deny()
+                    return
                 }
+                val resources = request.resources ?: emptyArray()
+                if (resources.any { it != PermissionRequest.RESOURCE_AUDIO_CAPTURE && it != PermissionRequest.RESOURCE_VIDEO_CAPTURE }) {
+                    request.deny()
+                    return
+                }
+                webkitPermissionRequest = request
+                val androidPermissions = mutableListOf<String>()
+                if (resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE) &&
+                        ContextCompat.checkSelfPermission(this@BrowserActivityNative, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                    androidPermissions.add(Manifest.permission.CAMERA)
+                }
+                if (resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE) &&
+                        ContextCompat.checkSelfPermission(this@BrowserActivityNative, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    androidPermissions.add(Manifest.permission.RECORD_AUDIO)
+                }
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || androidPermissions.isEmpty()) {
+                    request.grant(resources)
+                    webkitPermissionRequest = null
+                } else {
+                    ActivityCompat.requestPermissions(this@BrowserActivityNative,
+                            androidPermissions.toTypedArray(), REQUEST_CODE_INFOPANEL_MEDIA)
+                }
+            }
+
+            override fun onPermissionRequestCanceled(request: PermissionRequest?) {
+                if (webkitPermissionRequest === request) webkitPermissionRequest = null
+                super.onPermissionRequestCanceled(request)
             }
 
             override fun onJsAlert(view: WebView, url: String, message: String, result: JsResult): Boolean {
@@ -188,6 +214,10 @@ class BrowserActivityNative : BaseBrowserActivity(), LifecycleObserver {
         mWebView.webViewClient = object : WebViewClient() {
             private var isRedirect = false
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                if (configuration.infoPanelEnabled && !isInfoPanelUrl(url)) {
+                    Timber.w("Blocked navigation away from the built-in InfoPanel: $url")
+                    return true
+                }
                 isRedirect = true
                 view.loadUrl(url)
                 return true
@@ -195,7 +225,7 @@ class BrowserActivityNative : BaseBrowserActivity(), LifecycleObserver {
 
             // TODO load a special file here on disconnect and then reload page on timer
             override fun onReceivedError(view: WebView, errorCode: Int, description: String, failingUrl: String) {
-                if (!isFinishing) {
+                if (!isFinishing && !isInfoPanelUrl(failingUrl)) {
                     view.loadUrl("about:blank")
                     view.loadUrl("file:///android_asset/error_page.html")
                     isConnected = false
@@ -237,26 +267,59 @@ class BrowserActivityNative : BaseBrowserActivity(), LifecycleObserver {
         }
 
         mWebView.setOnTouchListener { v, event ->
+            val handlesInfoPanelTouch = configuration.infoPanelEnabled && isInfoPanelUrl(mWebView.url)
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     resetScreen()
+                    infoPanelTouchDownX = event.x
                     if (!v.hasFocus()) {
                         v.requestFocus()
                     }
                 }
-                MotionEvent.ACTION_UP -> if (!v.hasFocus()) {
-                    v.requestFocus()
+                MotionEvent.ACTION_UP -> {
+                    if (!v.hasFocus()) v.requestFocus()
+                    if (handlesInfoPanelTouch && Math.abs(event.x - infoPanelTouchDownX) <= INFO_PANEL_TAP_SLOP_PX) {
+                        val state = (infoPanelControlHub as InfoPanelControlHub).getStateJson()
+                        val screen = state.optString("screen", "clock")
+                        if ((screen == "clock" || screen == "weather") && v.width > 0) {
+                            val zone = when {
+                                event.x < v.width / 3f -> 0
+                                event.x < v.width * 2f / 3f -> 1
+                                else -> 2
+                            }
+                            val action = when {
+                                screen == "weather" && zone == 0 -> "clock"
+                                zone == 0 -> "left"
+                                zone == 1 -> "center"
+                                else -> "right"
+                            }
+                            (infoPanelControlHub as InfoPanelControlHub).performAction(action)
+                        }
+                    }
                 }
             }
-            false
+            handlesInfoPanelTouch
         }
 
+        infoPanelControlHub = InfoPanelControlHub(this) { action, state ->
+            runOnUiThread {
+                if (configuration.infoPanelEnabled) {
+                    val script = "window.InfoPanelRemote&&window.InfoPanelRemote.applyAction(" +
+                            JSONObject.quote(action) + "," + state.toString() + ");"
+                    evaluateJavascript(script)
+                }
+            }
+        }
+        (infoPanelControlHub as InfoPanelControlHub).start()
         initWebPageLoad()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         codeBottomSheet?.dismiss()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) webkitPermissionRequest?.deny()
+        webkitPermissionRequest = null
+        (infoPanelControlHub as InfoPanelControlHub).stop()
+        super.onDestroy()
     }
 
     override fun onStart() {
@@ -355,6 +418,12 @@ class BrowserActivityNative : BaseBrowserActivity(), LifecycleObserver {
             val zoomPercent = (zoomLevel * 100).toInt()
             mWebView.setInitialScale(zoomPercent)
         }
+        if (configuration.infoPanelEnabled) {
+            attachInfoPanelBridge()
+            loadWebViewUrl(INFO_PANEL_URL)
+            return
+        }
+        detachInfoPanelBridge()
         // check if we are using playlist
         if (configuration.appLaunchUrl.lines().size == 1) {
             loadWebViewUrl(configuration.appLaunchUrl)
@@ -405,21 +474,46 @@ class BrowserActivityNative : BaseBrowserActivity(), LifecycleObserver {
         playlistHandler?.postDelayed(playlistRunnable, 10)
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun askForWebkitPermission(permission: String, requestCode: Int) {
-        if (ContextCompat.checkSelfPermission(applicationContext, permission) != PackageManager.PERMISSION_GRANTED) {
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
-                // Show an expanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-            } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(this, arrayOf(permission), requestCode)
-            }
-        } else {
-            webkitPermissionRequest?.grant(webkitPermissionRequest?.resources)
+    private fun attachInfoPanelBridge() {
+        if (infoPanelBridgeAttached) {
+            return
         }
+        mWebView.addJavascriptInterface(InfoPanelBridge(infoPanelControlHub as InfoPanelControlHub), INFO_PANEL_BRIDGE_NAME)
+        infoPanelBridgeAttached = true
+    }
+
+    private fun detachInfoPanelBridge() {
+        if (!infoPanelBridgeAttached) {
+            return
+        }
+        mWebView.removeJavascriptInterface(INFO_PANEL_BRIDGE_NAME)
+        infoPanelBridgeAttached = false
+    }
+
+    private fun isInfoPanelUrl(url: String?): Boolean {
+        return url != null && (url == INFO_PANEL_URL.removeSuffix("/") || url.startsWith(INFO_PANEL_URL))
+    }
+
+    private fun isTrustedInfoPanelOrigin(origin: android.net.Uri?): Boolean {
+        return origin != null && origin.scheme == "http" && origin.host == "127.0.0.1" && origin.port == InfoPanelControlHub.HTTP_PORT
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        if (requestCode != REQUEST_CODE_INFOPANEL_MEDIA) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val request = webkitPermissionRequest
+            if (request != null) {
+                if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                    request.grant(request.resources)
+                } else {
+                    request.deny()
+                }
+            }
+        }
+        webkitPermissionRequest = null
     }
 
     private fun showCodeBottomSheet() {
@@ -484,6 +578,13 @@ class BrowserActivityNative : BaseBrowserActivity(), LifecycleObserver {
                 launchSettingsFab.imageAlpha = 180
             }
         }
+    }
+
+    companion object {
+        private const val INFO_PANEL_URL = "http://127.0.0.1:8080/panel/"
+        private const val INFO_PANEL_BRIDGE_NAME = "InfoPanel"
+        private const val INFO_PANEL_TAP_SLOP_PX = 48f
+        private const val REQUEST_CODE_INFOPANEL_MEDIA = 1401
     }
 
 }

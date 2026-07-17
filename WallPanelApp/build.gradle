@@ -18,43 +18,56 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-android-extensions'
-apply plugin: 'com.google.gms.google-services'
-apply plugin: 'com.google.firebase.crashlytics'
 
 
-def versionMajor = 0
-def versionMinor = 9
-def versionPatch = 5
-def versionBuild = 9 // bump for dog food builds, public betas, etc.
+def versionMajor = 1
+def versionMinor = 2
+def versionPatch = 1
+def versionBuild = 0
 
 def CODE() {
     Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    return properties.getProperty("code");
+    def file = project.rootProject.file('local.properties')
+    if (file.exists()) {
+        properties.load(file.newDataInputStream())
+    }
+    return properties.getProperty("code", "1234");
 }
 
 def HASS_URL() {
     Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    return properties.getProperty("hassUrl");
+    def file = project.rootProject.file('local.properties')
+    if (file.exists()) {
+        properties.load(file.newDataInputStream())
+    }
+    return properties.getProperty("hassUrl", "");
 }
 
 def BROKER() {
     Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    return properties.getProperty("broker");
+    def file = project.rootProject.file('local.properties')
+    if (file.exists()) {
+        properties.load(file.newDataInputStream())
+    }
+    return properties.getProperty("broker", "");
 }
 
 def BROKER_PASS() {
     Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    return properties.getProperty("brokerPass");
+    def file = project.rootProject.file('local.properties')
+    if (file.exists()) {
+        properties.load(file.newDataInputStream())
+    }
+    return properties.getProperty("brokerPass", "");
 }
 
 def BROKER_USERNAME() {
     Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    return properties.getProperty("brokerUsername");
+    def file = project.rootProject.file('local.properties')
+    if (file.exists()) {
+        properties.load(file.newDataInputStream())
+    }
+    return properties.getProperty("brokerUsername", "");
 }
 
 android {
@@ -65,11 +78,11 @@ android {
     compileSdkVersion 30
     buildToolsVersion "30.0.1"
     defaultConfig {
-        applicationId "com.thanksmister.iot.wallpanel"
+        applicationId "com.chan.infopanel"
         minSdkVersion 19
         targetSdkVersion 30
         versionCode versionMajor * 10000 + versionMinor * 1000 + versionPatch * 100 + versionBuild
-        versionName "${versionMajor}.${versionMinor}.${versionPatch}.${versionBuild}"
+        versionName "${versionMajor}.${versionMinor}.${versionPatch}"
         multiDexEnabled true
         ndk.abiFilters 'armeabi-v7a','arm64-v8a','x86','x86_64'
         vectorDrawables.useSupportLibrary = true
@@ -89,8 +102,8 @@ android {
         dev {
             dimension "default"
             buildConfigField "String", BASE_ENVIRONMENT, '"DEV_ENVIRONMENT"'
-            applicationId "com.thanksmister.iot.wallpanel"
-            versionName "${versionMajor}.${versionMinor}.${versionPatch} Build ${versionBuild}-DEV"
+            applicationId "com.chan.infopanel"
+            versionName "${versionMajor}.${versionMinor}.${versionPatch}-DEV"
             buildConfigField 'Integer', 'CODE', CODE()
             buildConfigField 'String', 'HASS_URL', "\"" + HASS_URL() +"\""
             buildConfigField 'String', 'BROKER', "\"" + BROKER() +"\""
@@ -100,14 +113,14 @@ android {
         qa {
             dimension "default"
             buildConfigField "String", BASE_ENVIRONMENT, '"QA_ENVIRONMENT"'
-            applicationId "com.thanksmister.iot.wallpanel"
-            versionName "${versionMajor}.${versionMinor}.${versionPatch} Build ${versionBuild}-QA"
+            applicationId "com.chan.infopanel"
+            versionName "${versionMajor}.${versionMinor}.${versionPatch}-QA"
         }
         prod {
             dimension "default"
             buildConfigField "String", BASE_ENVIRONMENT, '"PROD_ENVIRONMENT"'
-            applicationId "com.thanksmister.iot.wallpanel"
-            versionName "${versionMajor}.${versionMinor}.${versionPatch} Build ${versionBuild}"
+            applicationId "com.chan.infopanel"
+            versionName "${versionMajor}.${versionMinor}.${versionPatch}"
             buildConfigField 'Integer', 'CODE', '1234'
             buildConfigField 'String', 'HASS_URL', '""'
             buildConfigField 'String', 'BROKER', '""'
@@ -148,7 +161,6 @@ dependencies {
 
     // LiveData + ViewModel
     implementation "androidx.lifecycle:lifecycle-extensions:$versions.lifecycle"
-    implementation 'com.google.firebase:firebase-analytics:17.2.2'
     annotationProcessor "androidx.lifecycle:lifecycle-compiler:$versions.lifecycle"
     implementation "androidx.lifecycle:lifecycle-reactivestreams:$versions.lifecycle"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$versions.lifecycle"
@@ -179,17 +191,6 @@ dependencies {
 
     // Logging
     implementation 'com.jakewharton.timber:timber:4.5.1'
-
-    // Import the BoM for the Firebase platform
-    implementation platform('com.google.firebase:firebase-bom:28.4.0')
-
-    // Declare the dependencies for the Crashlytics and Analytics libraries
-    // When using the BoM, you don't specify versions in Firebase library dependencies
-    implementation 'com.google.firebase:firebase-analytics-ktx'
-    implementation 'com.google.firebase:firebase-crashlytics-ktx'
-
-    // Firebase
-    implementation 'com.google.firebase:firebase-core:19.0.1'
 
     // Picasso image loading
     implementation 'com.squareup.picasso:picasso:2.71828'
