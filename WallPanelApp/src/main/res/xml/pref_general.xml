@@ -25,6 +25,65 @@
             android:key="pref_settings_dashboard_url"
             android:title="@string/title_setting_app_launchurl" />
 
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="pref_infopanel_enabled"
+            android:summary="@string/summary_infopanel_mode"
+            android:title="@string/title_infopanel_mode" />
+
+        <EditTextPreference
+            android:defaultValue="35.6895"
+            android:key="pref_infopanel_latitude"
+            android:summary="@string/summary_infopanel_latitude"
+            android:title="@string/title_infopanel_latitude" />
+
+        <EditTextPreference
+            android:defaultValue="139.6917"
+            android:key="pref_infopanel_longitude"
+            android:summary="@string/summary_infopanel_longitude"
+            android:title="@string/title_infopanel_longitude" />
+
+        <ListPreference
+            android:defaultValue="celsius"
+            android:entries="@array/infopanel_unit_names"
+            android:entryValues="@array/infopanel_unit_values"
+            android:key="pref_infopanel_units"
+            android:summary="@string/summary_infopanel_units"
+            android:title="@string/title_infopanel_units" />
+
+        <EditTextPreference
+            android:defaultValue=""
+            android:key="pref_infopanel_weather_endpoint"
+            android:summary="@string/summary_infopanel_weather_endpoint"
+            android:title="@string/title_infopanel_weather_endpoint" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="pref_infopanel_allow_http"
+            android:summary="@string/summary_infopanel_allow_http"
+            android:title="@string/title_infopanel_allow_http" />
+
+        <EditTextPreference
+            android:defaultValue="30"
+            android:digits="0123456789"
+            android:key="pref_infopanel_refresh_minutes"
+            android:summary="@string/summary_infopanel_refresh_minutes"
+            android:title="@string/title_infopanel_refresh_minutes" />
+
+        <EditTextPreference
+            android:defaultValue="7"
+            android:digits="0123456789"
+            android:key="pref_infopanel_calendar_days"
+            android:summary="@string/summary_infopanel_calendar_days"
+            android:title="@string/title_infopanel_calendar_days" />
+
+        <EditTextPreference
+            android:defaultValue="8"
+            android:digits="0123456789"
+            android:key="pref_infopanel_calendar_limit"
+            android:summary="@string/summary_infopanel_calendar_limit"
+            android:title="@string/title_infopanel_calendar_limit" />
+
         <Preference
             android:key="button_alarm_code"
             android:negativeButtonText="@android:string/cancel"
@@ -218,4 +277,3 @@
         android:title="@string/pref_about_title"/>
 
 </PreferenceScreen>
-

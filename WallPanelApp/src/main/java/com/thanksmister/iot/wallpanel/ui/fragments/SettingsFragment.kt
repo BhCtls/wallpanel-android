@@ -41,6 +41,15 @@ import androidx.preference.SwitchPreference
 import com.thanksmister.iot.wallpanel.R
 import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_SCREENSAVER_DIM_VALUE
 import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_SCREEN_BRIGHTNESS
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_ALLOW_HTTP
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_CALENDAR_DAYS
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_CALENDAR_LIMIT
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_ENABLED
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_LATITUDE
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_LONGITUDE
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_REFRESH_MINUTES
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_UNITS
+import com.thanksmister.iot.wallpanel.persistence.Configuration.Companion.PREF_INFOPANEL_WEATHER_ENDPOINT
 import com.thanksmister.iot.wallpanel.ui.activities.SettingsActivity.Companion.PERMISSIONS_REQUEST_WRITE_SETTINGS
 import com.thanksmister.iot.wallpanel.ui.views.SettingsCodeView
 import com.thanksmister.iot.wallpanel.utils.DateUtils
@@ -74,6 +83,15 @@ class SettingsFragment : BaseSettingsFragment() {
     private var aboutPreference: Preference? = null
     private var brightnessPreference: Preference? = null
     private var browserRefreshPreference: SwitchPreference? = null
+    private var infoPanelModePreference: SwitchPreference? = null
+    private var infoPanelLatitudePreference: EditTextPreference? = null
+    private var infoPanelLongitudePreference: EditTextPreference? = null
+    private var infoPanelUnitsPreference: ListPreference? = null
+    private var infoPanelWeatherEndpointPreference: EditTextPreference? = null
+    private var infoPanelAllowHttpPreference: SwitchPreference? = null
+    private var infoPanelRefreshPreference: EditTextPreference? = null
+    private var infoPanelCalendarDaysPreference: EditTextPreference? = null
+    private var infoPanelCalendarLimitPreference: EditTextPreference? = null
 
     private var clockSaverPreference: SwitchPreference? = null
     private var inactivityPreference: ListPreference? = null
@@ -195,8 +213,33 @@ class SettingsFragment : BaseSettingsFragment() {
         dimPreference = findPreference<ListPreference>(PREF_SCREENSAVER_DIM_VALUE) as ListPreference
         screenBrightness = findPreference<SwitchPreference>(PREF_SCREEN_BRIGHTNESS) as SwitchPreference
         ignoreSSLErrorsPreference = findPreference<SwitchPreference>(getString(R.string.key_setting_ignore_ssl_errors)) as SwitchPreference
+        infoPanelModePreference = findPreference<SwitchPreference>(PREF_INFOPANEL_ENABLED) as SwitchPreference
+        infoPanelLatitudePreference = findPreference<EditTextPreference>(PREF_INFOPANEL_LATITUDE) as EditTextPreference
+        infoPanelLongitudePreference = findPreference<EditTextPreference>(PREF_INFOPANEL_LONGITUDE) as EditTextPreference
+        infoPanelUnitsPreference = findPreference<ListPreference>(PREF_INFOPANEL_UNITS) as ListPreference
+        infoPanelWeatherEndpointPreference = findPreference<EditTextPreference>(PREF_INFOPANEL_WEATHER_ENDPOINT) as EditTextPreference
+        infoPanelAllowHttpPreference = findPreference<SwitchPreference>(PREF_INFOPANEL_ALLOW_HTTP) as SwitchPreference
+        infoPanelRefreshPreference = findPreference<EditTextPreference>(PREF_INFOPANEL_REFRESH_MINUTES) as EditTextPreference
+        infoPanelCalendarDaysPreference = findPreference<EditTextPreference>(PREF_INFOPANEL_CALENDAR_DAYS) as EditTextPreference
+        infoPanelCalendarLimitPreference = findPreference<EditTextPreference>(PREF_INFOPANEL_CALENDAR_LIMIT) as EditTextPreference
 
         browserRefreshOnDisconnect.isChecked = configuration.browserRefreshDisconnect
+        infoPanelModePreference?.isChecked = configuration.infoPanelEnabled
+        infoPanelLatitudePreference?.text = configuration.infoPanelLatitude
+        infoPanelLatitudePreference?.summary = configuration.infoPanelLatitude
+        infoPanelLongitudePreference?.text = configuration.infoPanelLongitude
+        infoPanelLongitudePreference?.summary = configuration.infoPanelLongitude
+        infoPanelUnitsPreference?.value = configuration.infoPanelUnits
+        infoPanelUnitsPreference?.summary = infoPanelUnitsPreference?.entry
+        infoPanelWeatherEndpointPreference?.text = configuration.infoPanelWeatherEndpoint
+        infoPanelWeatherEndpointPreference?.summary = configuration.infoPanelWeatherEndpoint.ifEmpty { getString(R.string.summary_infopanel_weather_endpoint) }
+        infoPanelAllowHttpPreference?.isChecked = configuration.infoPanelAllowHttp
+        infoPanelRefreshPreference?.text = configuration.infoPanelRefreshMinutes.toString()
+        infoPanelRefreshPreference?.summary = configuration.infoPanelRefreshMinutes.toString()
+        infoPanelCalendarDaysPreference?.text = configuration.infoPanelCalendarDays.toString()
+        infoPanelCalendarDaysPreference?.summary = configuration.infoPanelCalendarDays.toString()
+        infoPanelCalendarLimitPreference?.text = configuration.infoPanelCalendarLimit.toString()
+        infoPanelCalendarLimitPreference?.summary = configuration.infoPanelCalendarLimit.toString()
         fullScreenPreference.isChecked = configuration.fullScreen
         settingsTransparentPreference.isChecked = configuration.settingsTransparent
         settingsDisablePreference.isChecked = configuration.settingsDisabled
@@ -375,6 +418,50 @@ class SettingsFragment : BaseSettingsFragment() {
                     configuration.appLaunchUrl = value
                     dashboardPreference?.summary = value
                 }
+            }
+            PREF_INFOPANEL_ENABLED -> {
+                configuration.infoPanelEnabled = infoPanelModePreference?.isChecked ?: true
+            }
+            PREF_INFOPANEL_LATITUDE -> {
+                val value = infoPanelLatitudePreference?.text.orEmpty()
+                configuration.infoPanelLatitude = value
+                infoPanelLatitudePreference?.summary = value
+            }
+            PREF_INFOPANEL_LONGITUDE -> {
+                val value = infoPanelLongitudePreference?.text.orEmpty()
+                configuration.infoPanelLongitude = value
+                infoPanelLongitudePreference?.summary = value
+            }
+            PREF_INFOPANEL_UNITS -> {
+                val value = infoPanelUnitsPreference?.value.orEmpty()
+                configuration.infoPanelUnits = value
+                infoPanelUnitsPreference?.summary = infoPanelUnitsPreference?.entry
+            }
+            PREF_INFOPANEL_WEATHER_ENDPOINT -> {
+                val value = infoPanelWeatherEndpointPreference?.text.orEmpty()
+                configuration.infoPanelWeatherEndpoint = value
+                infoPanelWeatherEndpointPreference?.summary = value.ifEmpty { getString(R.string.summary_infopanel_weather_endpoint) }
+            }
+            PREF_INFOPANEL_ALLOW_HTTP -> {
+                configuration.infoPanelAllowHttp = infoPanelAllowHttpPreference?.isChecked ?: false
+            }
+            PREF_INFOPANEL_REFRESH_MINUTES -> {
+                val value = infoPanelRefreshPreference?.text?.toIntOrNull() ?: 30
+                configuration.infoPanelRefreshMinutes = value
+                infoPanelRefreshPreference?.text = configuration.infoPanelRefreshMinutes.toString()
+                infoPanelRefreshPreference?.summary = configuration.infoPanelRefreshMinutes.toString()
+            }
+            PREF_INFOPANEL_CALENDAR_DAYS -> {
+                val value = infoPanelCalendarDaysPreference?.text?.toIntOrNull() ?: 7
+                configuration.infoPanelCalendarDays = value
+                infoPanelCalendarDaysPreference?.text = configuration.infoPanelCalendarDays.toString()
+                infoPanelCalendarDaysPreference?.summary = configuration.infoPanelCalendarDays.toString()
+            }
+            PREF_INFOPANEL_CALENDAR_LIMIT -> {
+                val value = infoPanelCalendarLimitPreference?.text?.toIntOrNull() ?: 8
+                configuration.infoPanelCalendarLimit = value
+                infoPanelCalendarLimitPreference?.text = configuration.infoPanelCalendarLimit.toString()
+                infoPanelCalendarLimitPreference?.summary = configuration.infoPanelCalendarLimit.toString()
             }
             PREF_SETTINGS_USER_AGENT -> {
                 val value = userAgentPreference.text.orEmpty()

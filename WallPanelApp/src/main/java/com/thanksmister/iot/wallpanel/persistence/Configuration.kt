@@ -264,6 +264,69 @@ constructor(private val context: Context, private val sharedPreferences: SharedP
             sharedPreferences.edit().putBoolean(context.getString(R.string.key_pref_browser_refresh), value).apply()
         }
 
+    var infoPanelEnabled: Boolean
+        get() = sharedPreferences.getBoolean(PREF_INFOPANEL_ENABLED, true)
+        set(value) {
+            sharedPreferences.edit().putBoolean(PREF_INFOPANEL_ENABLED, value).apply()
+            settingsUpdated()
+        }
+
+    var infoPanelLatitude: String
+        get() = sharedPreferences.getString(PREF_INFOPANEL_LATITUDE, "35.6895").orEmpty()
+        set(value) {
+            sharedPreferences.edit().putString(PREF_INFOPANEL_LATITUDE, value).apply()
+            settingsUpdated()
+        }
+
+    var infoPanelLongitude: String
+        get() = sharedPreferences.getString(PREF_INFOPANEL_LONGITUDE, "139.6917").orEmpty()
+        set(value) {
+            sharedPreferences.edit().putString(PREF_INFOPANEL_LONGITUDE, value).apply()
+            settingsUpdated()
+        }
+
+    var infoPanelUnits: String
+        get() = sharedPreferences.getString(PREF_INFOPANEL_UNITS, "celsius").orEmpty()
+        set(value) {
+            sharedPreferences.edit().putString(PREF_INFOPANEL_UNITS, value).apply()
+            settingsUpdated()
+        }
+
+    var infoPanelWeatherEndpoint: String
+        get() = sharedPreferences.getString(PREF_INFOPANEL_WEATHER_ENDPOINT, "").orEmpty()
+        set(value) {
+            sharedPreferences.edit().putString(PREF_INFOPANEL_WEATHER_ENDPOINT, value).apply()
+            settingsUpdated()
+        }
+
+    var infoPanelAllowHttp: Boolean
+        get() = sharedPreferences.getBoolean(PREF_INFOPANEL_ALLOW_HTTP, false)
+        set(value) {
+            sharedPreferences.edit().putBoolean(PREF_INFOPANEL_ALLOW_HTTP, value).apply()
+            settingsUpdated()
+        }
+
+    var infoPanelRefreshMinutes: Int
+        get() = sharedPreferences.getString(PREF_INFOPANEL_REFRESH_MINUTES, "30")?.toIntOrNull() ?: 30
+        set(value) {
+            sharedPreferences.edit().putString(PREF_INFOPANEL_REFRESH_MINUTES, value.coerceAtLeast(5).toString()).apply()
+            settingsUpdated()
+        }
+
+    var infoPanelCalendarDays: Int
+        get() = sharedPreferences.getString(PREF_INFOPANEL_CALENDAR_DAYS, "7")?.toIntOrNull() ?: 7
+        set(value) {
+            sharedPreferences.edit().putString(PREF_INFOPANEL_CALENDAR_DAYS, value.coerceAtLeast(1).toString()).apply()
+            settingsUpdated()
+        }
+
+    var infoPanelCalendarLimit: Int
+        get() = sharedPreferences.getString(PREF_INFOPANEL_CALENDAR_LIMIT, "8")?.toIntOrNull() ?: 8
+        set(value) {
+            sharedPreferences.edit().putString(PREF_INFOPANEL_CALENDAR_LIMIT, value.coerceAtLeast(1).toString()).apply()
+            settingsUpdated()
+        }
+
     val cameraFPS: Float
         get() = try {
             getStringPref(R.string.key_setting_camera_fps, R.string.default_camera_fps).trim().toFloat()
@@ -388,6 +451,15 @@ constructor(private val context: Context, private val sharedPreferences: SharedP
         const val PREF_CAMERA_PERMISSIONS = "pref_camera_permissions"
         const val PREF_CAMERA_ROTATE = "pref_camera_rotate"
         const val PREF_BROWSER_REFRESH_DISCONNECT = "pref_browser_refresh_disconnect"
+        const val PREF_INFOPANEL_ENABLED = "pref_infopanel_enabled"
+        const val PREF_INFOPANEL_LATITUDE = "pref_infopanel_latitude"
+        const val PREF_INFOPANEL_LONGITUDE = "pref_infopanel_longitude"
+        const val PREF_INFOPANEL_UNITS = "pref_infopanel_units"
+        const val PREF_INFOPANEL_WEATHER_ENDPOINT = "pref_infopanel_weather_endpoint"
+        const val PREF_INFOPANEL_ALLOW_HTTP = "pref_infopanel_allow_http"
+        const val PREF_INFOPANEL_REFRESH_MINUTES = "pref_infopanel_refresh_minutes"
+        const val PREF_INFOPANEL_CALENDAR_DAYS = "pref_infopanel_calendar_days"
+        const val PREF_INFOPANEL_CALENDAR_LIMIT = "pref_infopanel_calendar_limit"
         const val PREF_SCREEN_BRIGHTNESS = "pref_use_screen_brightness"
         const val PREF_SCREENSAVER_DIM_VALUE = "pref_screensaver_dim_value"
         private val ROTATE_TIME_IN_MINUTES = 15
